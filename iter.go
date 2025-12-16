@@ -30,40 +30,27 @@ const (
 
 // Field is a field in a LTSV line.
 type Field struct {
-	Label []byte
-	Value []byte
+	label    []byte
+	rawValue []byte
+}
+
+// Label returns the unescaped value in the Field.
+func (f *Field) Label() []byte { return f.label }
+
+// RawValue returns the raw (escaped) value in the Field.
+func (f *Field) RawField() []byte { return f.rawValue }
+
+// Value returns the unescaped value in the Field.
+func (f *Field) Value(buf []byte) []byte {
+	if isEscapedValue(f.rawValue) {
+		return appendUnescapedValue(buf[:0], f.rawValue)
+	}
+	return f.rawValue
 }
 
 // Fields returns an interator for fields in a LTSV line.
-// The Value in the returned Field is unescaped.
-func Fields(line, unescapeBuf []byte) iter.Seq2[Field, error] {
+func Fields(line []byte) iter.Seq2[Field, error] {
 	return func(yield func(Field, error) bool) {
-		for field, err := range rawFields(line) {
-			if err != nil {
-				yield(Field{}, err)
-				return
-			}
-			value := field.RawValue
-			if isEscapedValue(value) {
-				value = appendUnescapedValue(unescapeBuf[:0], value)
-			}
-			if !yield(Field{
-				Label: field.Label,
-				Value: value,
-			}, nil) {
-				return
-			}
-		}
-	}
-}
-
-type rawField struct {
-	Label    []byte
-	RawValue []byte
-}
-
-func rawFields(line []byte) iter.Seq2[rawField, error] {
-	return func(yield func(rawField, error) bool) {
 		// Cut newline at end
 		if len(line) > 0 && line[len(line)-1] == newline {
 			line = line[:len(line)-1]
@@ -82,19 +69,19 @@ func rawFields(line []byte) iter.Seq2[rawField, error] {
 			}
 
 			if j := bytes.IndexByte(field, labelSepartor); j == -1 {
-				yield(rawField{}, &invalidLTSVError{
+				yield(Field{}, &invalidLTSVError{
 					detail: noLabelSeparatorInField,
 				})
 				return
-			} else if !yield(rawField{
-				Label:    field[:j],
-				RawValue: field[j+1:],
+			} else if !yield(Field{
+				label:    field[:j],
+				rawValue: field[j+1:],
 			}, nil) {
 				return
 			}
 
 			if i != -1 && len(line) == 0 {
-				yield(rawField{}, &invalidLTSVError{
+				yield(Field{}, &invalidLTSVError{
 					detail: lineEndsWithFieldSeparator,
 				})
 				return
