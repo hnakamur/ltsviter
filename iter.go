@@ -13,6 +13,32 @@ const (
 	newline       = '\n'
 )
 
+type Entry struct {
+	Label []byte
+	Value []byte
+}
+
+func EntryIter(line, unescapeBuf []byte) iter.Seq2[Entry, error] {
+	return func(yield func(Entry, error) bool) {
+		for entry, err := range RawEntryIter(line) {
+			if err != nil {
+				yield(Entry{}, err)
+				return
+			}
+			value := entry.RawValue
+			if IsEscapedValue(value) {
+				value = AppendUnescapedValue(unescapeBuf[:0], value)
+			}
+			if !yield(Entry{
+				Label: entry.Label,
+				Value: value,
+			}, nil) {
+				return
+			}
+		}
+	}
+}
+
 type RawEntry struct {
 	Label    []byte
 	RawValue []byte
