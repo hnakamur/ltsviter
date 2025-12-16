@@ -13,24 +13,24 @@ const (
 	newline       = '\n'
 )
 
-type Entry struct {
+type Field struct {
 	Label []byte
 	Value []byte
 }
 
-func EntryIter(line, unescapeBuf []byte) iter.Seq2[Entry, error] {
-	return func(yield func(Entry, error) bool) {
-		for entry, err := range RawEntryIter(line) {
+func Fields(line, unescapeBuf []byte) iter.Seq2[Field, error] {
+	return func(yield func(Field, error) bool) {
+		for field, err := range RawFields(line) {
 			if err != nil {
-				yield(Entry{}, err)
+				yield(Field{}, err)
 				return
 			}
-			value := entry.RawValue
+			value := field.RawValue
 			if IsEscapedValue(value) {
 				value = AppendUnescapedValue(unescapeBuf[:0], value)
 			}
-			if !yield(Entry{
-				Label: entry.Label,
+			if !yield(Field{
+				Label: field.Label,
 				Value: value,
 			}, nil) {
 				return
@@ -39,13 +39,13 @@ func EntryIter(line, unescapeBuf []byte) iter.Seq2[Entry, error] {
 	}
 }
 
-type RawEntry struct {
+type RawField struct {
 	Label    []byte
 	RawValue []byte
 }
 
-func RawEntryIter(line []byte) iter.Seq2[RawEntry, error] {
-	return func(yield func(RawEntry, error) bool) {
+func RawFields(line []byte) iter.Seq2[RawField, error] {
+	return func(yield func(RawField, error) bool) {
 		// Cut newline at end
 		if len(line) > 0 && line[len(line)-1] == newline {
 			line = line[:len(line)-1]
@@ -64,11 +64,11 @@ func RawEntryIter(line []byte) iter.Seq2[RawEntry, error] {
 			}
 
 			if j := bytes.IndexByte(field, labelSepartor); j == -1 {
-				yield(RawEntry{}, &invalidLTSVError{
+				yield(RawField{}, &invalidLTSVError{
 					detail: noLabelSeparatorInField,
 				})
 				return
-			} else if !yield(RawEntry{
+			} else if !yield(RawField{
 				Label:    field[:j],
 				RawValue: field[j+1:],
 			}, nil) {
@@ -76,7 +76,7 @@ func RawEntryIter(line []byte) iter.Seq2[RawEntry, error] {
 			}
 
 			if i != -1 && len(line) == 0 {
-				yield(RawEntry{}, &invalidLTSVError{
+				yield(RawField{}, &invalidLTSVError{
 					detail: lineEndsWithFieldSeparator,
 				})
 				return

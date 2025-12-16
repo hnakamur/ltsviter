@@ -5,7 +5,7 @@ import (
 	"testing"
 )
 
-func TestEntryIter(t *testing.T) {
+func TestRawFields(t *testing.T) {
 	t.Run("normalCases", func(t *testing.T) {
 		tsstCases := []struct {
 			name  string
@@ -16,20 +16,20 @@ func TestEntryIter(t *testing.T) {
 		}
 		for _, tc := range tsstCases {
 			t.Run(tc.name, func(t *testing.T) {
-				wants := []RawEntry{
+				wants := []RawField{
 					{Label: []byte("time"), RawValue: []byte("2025-12-17T03:46:56.123456+09:00")},
 					{Label: []byte("ua"), RawValue: []byte("value\\twith\\\\escapes\\n")},
 				}
 				i := 0
-				for entry, err := range RawEntryIter(tc.input) {
+				for field, err := range RawFields(tc.input) {
 					if err != nil {
 						t.Fatalf("unexpected error: %v", err)
 					}
 
-					if got, want := entry.Label, wants[i].Label; !bytes.Equal(got, want) {
+					if got, want := field.Label, wants[i].Label; !bytes.Equal(got, want) {
 						t.Errorf("label mismatch, i=%d, got=%s, want=%s", i, string(got), string(want))
 					}
-					if got, want := entry.RawValue, wants[i].RawValue; !bytes.Equal(got, want) {
+					if got, want := field.RawValue, wants[i].RawValue; !bytes.Equal(got, want) {
 						t.Errorf("raw value mismatch, i=%d, got=%s, want=%s", i, string(got), string(want))
 					}
 					i++
@@ -57,7 +57,7 @@ func TestEntryIter(t *testing.T) {
 		for _, tc := range testCases {
 			t.Run(tc.name, func(t *testing.T) {
 				var firstError error
-				for _, err := range RawEntryIter(tc.input) {
+				for _, err := range RawFields(tc.input) {
 					if err != nil {
 						firstError = err
 						break

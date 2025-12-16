@@ -2,34 +2,34 @@ package ltsviter
 
 import "testing"
 
-func BenchmarkIter(b *testing.B) {
+func BenchmarkFields(b *testing.B) {
 	input := []byte("time:2025-12-17T03:46:56.123456+09:00\tua:value\\twith\\\\escapes\\n\n")
-	nop := func(*Entry) {}
+	nop := func(*Field) {}
 	for b.Loop() {
 		var buf [64]byte
-		for entry, err := range EntryIter(input, buf[:]) {
+		for field, err := range Fields(input, buf[:]) {
 			if err != nil {
 				return
 			}
-			nop(&entry)
+			nop(&field)
 		}
 	}
 }
 
-func BenchmarkRawIter(b *testing.B) {
+func BenchmarkRawFields(b *testing.B) {
 	input := []byte("time:2025-12-17T03:46:56.123456+09:00\tua:value\\twith\\\\escapes\\n\n")
 	nop := func([]byte, []byte) {}
 	for b.Loop() {
 		var buf [64]byte
-		for entry, err := range RawEntryIter(input) {
+		for field, err := range RawFields(input) {
 			if err != nil {
 				return
 			}
-			value := entry.RawValue
+			value := field.RawValue
 			if IsEscapedValue(value) {
 				value = AppendUnescapedValue(buf[:0], value)
 			}
-			nop(entry.Label, value)
+			nop(field.Label, value)
 		}
 	}
 }
