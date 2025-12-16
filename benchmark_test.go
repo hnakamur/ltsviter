@@ -21,13 +21,13 @@ func BenchmarkRawFields(b *testing.B) {
 	nop := func([]byte, []byte) {}
 	for b.Loop() {
 		var buf [64]byte
-		for field, err := range RawFields(input) {
+		for field, err := range rawFields(input) {
 			if err != nil {
 				return
 			}
 			value := field.RawValue
-			if IsEscapedValue(value) {
-				value = AppendUnescapedValue(buf[:0], value)
+			if isEscapedValue(value) {
+				value = appendUnescapedValue(buf[:0], value)
 			}
 			nop(field.Label, value)
 		}

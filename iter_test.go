@@ -16,12 +16,12 @@ func TestRawFields(t *testing.T) {
 		}
 		for _, tc := range tsstCases {
 			t.Run(tc.name, func(t *testing.T) {
-				wants := []RawField{
+				wants := []rawField{
 					{Label: []byte("time"), RawValue: []byte("2025-12-17T03:46:56.123456+09:00")},
 					{Label: []byte("ua"), RawValue: []byte("value\\twith\\\\escapes\\n")},
 				}
 				i := 0
-				for field, err := range RawFields(tc.input) {
+				for field, err := range rawFields(tc.input) {
 					if err != nil {
 						t.Fatalf("unexpected error: %v", err)
 					}
@@ -57,7 +57,7 @@ func TestRawFields(t *testing.T) {
 		for _, tc := range testCases {
 			t.Run(tc.name, func(t *testing.T) {
 				var firstError error
-				for _, err := range RawFields(tc.input) {
+				for _, err := range rawFields(tc.input) {
 					if err != nil {
 						firstError = err
 						break
@@ -86,7 +86,7 @@ func TestIsEscapedValue(t *testing.T) {
 	}
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			if got, want := IsEscapedValue(tc.input), tc.want; got != want {
+			if got, want := isEscapedValue(tc.input), tc.want; got != want {
 				t.Errorf("result mismatch, input=%s, got=%v, want=%v", string(tc.input), got, want)
 			}
 		})
@@ -112,7 +112,7 @@ func TestIsAppendUnescapedValue(t *testing.T) {
 	}
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			if got, want := AppendUnescapedValue([]byte{}, tc.input), tc.want; !bytes.Equal(got, want) {
+			if got, want := appendUnescapedValue([]byte{}, tc.input), tc.want; !bytes.Equal(got, want) {
 				t.Errorf("result mismatch, input=%s, got=%s, want=%s", string(tc.input), string(got), string(want))
 			}
 		})

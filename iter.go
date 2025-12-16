@@ -1,3 +1,18 @@
+// Package ltsviter provides a function to iterate over fields in a LTSV (Labeled Tab-Separated Values; http://ltsv.org/) line.
+//
+// This package supports an extended specification of LTSV, including value escaping.
+//
+// # The original LTSV specification
+//
+//   - Fields are separated with a tab character.
+//   - A label and its corresponding value within a field are separated by a colon character.
+//
+// # Value Escape Extension
+//
+// The following special characters within values are escaped using a backslash character (\):
+//   - Tab
+//   - Newline
+//   - Backslash
 package ltsviter
 
 import (
@@ -13,21 +28,24 @@ const (
 	newline       = '\n'
 )
 
+// Field is a field in a LTSV line.
 type Field struct {
 	Label []byte
 	Value []byte
 }
 
+// Fields returns an interator for fields in a LTSV line.
+// The Value in the returned Field is unescaped.
 func Fields(line, unescapeBuf []byte) iter.Seq2[Field, error] {
 	return func(yield func(Field, error) bool) {
-		for field, err := range RawFields(line) {
+		for field, err := range rawFields(line) {
 			if err != nil {
 				yield(Field{}, err)
 				return
 			}
 			value := field.RawValue
-			if IsEscapedValue(value) {
-				value = AppendUnescapedValue(unescapeBuf[:0], value)
+			if isEscapedValue(value) {
+				value = appendUnescapedValue(unescapeBuf[:0], value)
 			}
 			if !yield(Field{
 				Label: field.Label,
@@ -39,13 +57,13 @@ func Fields(line, unescapeBuf []byte) iter.Seq2[Field, error] {
 	}
 }
 
-type RawField struct {
+type rawField struct {
 	Label    []byte
 	RawValue []byte
 }
 
-func RawFields(line []byte) iter.Seq2[RawField, error] {
-	return func(yield func(RawField, error) bool) {
+func rawFields(line []byte) iter.Seq2[rawField, error] {
+	return func(yield func(rawField, error) bool) {
 		// Cut newline at end
 		if len(line) > 0 && line[len(line)-1] == newline {
 			line = line[:len(line)-1]
@@ -64,11 +82,11 @@ func RawFields(line []byte) iter.Seq2[RawField, error] {
 			}
 
 			if j := bytes.IndexByte(field, labelSepartor); j == -1 {
-				yield(RawField{}, &invalidLTSVError{
+				yield(rawField{}, &invalidLTSVError{
 					detail: noLabelSeparatorInField,
 				})
 				return
-			} else if !yield(RawField{
+			} else if !yield(rawField{
 				Label:    field[:j],
 				RawValue: field[j+1:],
 			}, nil) {
@@ -76,7 +94,7 @@ func RawFields(line []byte) iter.Seq2[RawField, error] {
 			}
 
 			if i != -1 && len(line) == 0 {
-				yield(RawField{}, &invalidLTSVError{
+				yield(rawField{}, &invalidLTSVError{
 					detail: lineEndsWithFieldSeparator,
 				})
 				return
@@ -98,11 +116,11 @@ const (
 	lineEndsWithFieldSeparator = "line ends with a field separator"
 )
 
-func IsEscapedValue(rawValue []byte) bool {
+func isEscapedValue(rawValue []byte) bool {
 	return bytes.IndexByte(rawValue, escapeChar) != -1
 }
 
-func AppendUnescapedValue(dest, rawValue []byte) []byte {
+func appendUnescapedValue(dest, rawValue []byte) []byte {
 	seenEscape := false
 	for _, b := range rawValue {
 		if seenEscape {
