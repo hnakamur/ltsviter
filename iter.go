@@ -38,7 +38,7 @@ type Field struct {
 func (f *Field) Label() []byte { return f.label }
 
 // RawValue returns the raw (escaped) value in the Field.
-func (f *Field) RawField() []byte { return f.rawValue }
+func (f *Field) RawValue() []byte { return f.rawValue }
 
 // Value returns the unescaped value in the Field.
 func (f *Field) Value(buf []byte) []byte {
